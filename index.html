@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Course Management</title>
+    <style>
+      p {
+        background-color: lightgoldenrodyellow;
+        padding: 10px;
+      }
+
+      input {
+        margin: 5px;
+      }
+
+      ul {
+        list-style-type: none;
+      }
+
+      li {
+        padding: 5px;
+        margin-bottom: 5px;
+        background-color: lightgray;
+        border-radius: 5px;
+      }
+
+      .course-btn {
+        margin-left: 10px;
+      }
+
+      #editForm {
+        display: none;
+        background-color: lightgoldenrodyellow;
+        padding: 15px;
+        border-radius: 5px;
+      }
+    </style>
+    <script>
+      window.onload = function () {
+        let btnCrs = document.getElementById("btnCrs");
+        let btnAdd = document.getElementById("btnAdd");
+        btnCrs.addEventListener("click", getCourses);
+        btnAdd.addEventListener("click", postData);
+
+        document
+          .getElementById("contents")
+          .addEventListener("click", function (event) {
+            if (event.target.classList.contains("delete-btn")) {
+              deleteCourse(event.target.dataset.id);
+            } else if (event.target.classList.contains("edit-btn")) {
+              showEditForm(event.target.dataset.id);
+            }
+          });
+
+        document
+          .getElementById("btnUpdate")
+          .addEventListener("click", updateCourse);
+
+        document
+          .getElementById("btnCancel")
+          .addEventListener("click", updateCancel);
+      };
+
+      function getCourses() {
+        let contents = document.getElementById("contents");
+        const xhr = new XMLHttpRequest();
+
+        xhr.open("GET", "https://6728860f270bd0b97555efb5.mockapi.io/courses");
+        xhr.setRequestHeader("content-type", "application/json");
+        xhr.send();
+
+        xhr.onload = () => {
+          if (xhr.status === 200) {
+            const res = JSON.parse(xhr.response);
+            contents.innerHTML = makeList(res);
+          } else {
+            console.log(xhr.status, xhr.statusText);
+          }
+        };
+      }
+
+      function makeList(data) {
+        let str = "<ul>";
+        data.forEach((course) => {
+          str += `<li><strong>${course.cname} </strong> by ${course.prof} (${course.credit} credits, Code: ${course.code})
+          <button class="course-btn delete-btn" data-id="${course.id}">Delete</button>
+          <button class="course-btn edit-btn" data-id="${course.id}">Edit</button></li>`;
+        });
+        str += "</ul>";
+        return str;
+      }
+
+      function postData() {
+        let cname = document.getElementById("cname").value;
+        let prof = document.getElementById("prof").value;
+        let credit = document.getElementById("credits").value;
+        let ccode = document.getElementById("ccode").value;
+
+        if (!cname || !prof || !credit || !ccode) {
+          alert("All fields are required!");
+          return;
+        }
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "https://6728860f270bd0b97555efb5.mockapi.io/courses");
+        xhr.setRequestHeader("content-type", "application/json; charset=UTF-8");
+        const data = {
+          cname: cname,
+          prof: prof,
+          credit: credit,
+          code: ccode,
+        };
+        xhr.send(JSON.stringify(data));
+
+        xhr.onload = () => {
+          if (xhr.status === 201) {
+            document.getElementById("cname").value = "";
+            document.getElementById("prof").value = "";
+            document.getElementById("credits").value = "";
+            document.getElementById("ccode").value = "";
+            getCourses();
+          } else {
+            console.log(xhr.status, xhr.statusText);
+          }
+        };
+      }
+
+      function deleteCourse(id) {
+        const xhr = new XMLHttpRequest();
+        xhr.open(
+          "DELETE",
+          "https://6728860f270bd0b97555efb5.mockapi.io/courses" + id
+        );
+        xhr.setRequestHeader("content-type", "application/json");
+        xhr.send();
+        xhr.onload = () => {
+          if (xhr.status === 200) {
+            getCourses();
+          } else {
+            console.log(xhr.status, xhr.statusText);
+          }
+        };
+      }
+
+      function showEditForm(id) {
+        const xhr = new XMLHttpRequest();
+        xhr.open(
+          "GET",
+          "https://6728860f270bd0b97555efb5.mockapi.io/courses" + id
+        );
+        xhr.setRequestHeader("content-type", "application/json");
+        xhr.send();
+
+        xhr.onload = () => {
+          if (xhr.status === 200) {
+            const course = JSON.parse(xhr.response);
+            document.getElementById("editId").value = id;
+            document.getElementById("editCname").value = course.cname;
+            document.getElementById("editProf").value = course.prof;
+            document.getElementById("editCredits").value = course.credit;
+            document.getElementById("editCcode").value = course.code;
+
+            document.getElementById("editForm").style.display = "block";
+          } else {
+            console.log(xhr.status, xhr.statusText);
+          }
+        };
+      }
+
+      function updateCourse() {
+        const id = document.getElementById("editId").value;
+        const cname = document.getElementById("editCname").value;
+        const prof = document.getElementById("editProf").value;
+        const credits = document.getElementById("editCredits").value;
+        const ccode = document.getElementById("editCcode").value;
+
+        if (!cname || !prof || !credits || !ccode) {
+          alert("All fields are required!");
+          return;
+        }
+
+        const updatedData = {
+          cname: cname,
+          prof: prof,
+          credit: credits,
+          code: ccode,
+        };
+
+        const xhr = new XMLHttpRequest();
+        xhr.open(
+          "PUT",
+          "https://6728860f270bd0b97555efb5.mockapi.io/courses" + id
+        );
+        xhr.setRequestHeader("content-type", "application/json; charset=UTF-8");
+        xhr.send(JSON.stringify(updatedData));
+
+        xhr.onload = () => {
+          if (xhr.status === 200) {
+            document.getElementById("editForm").style.display = "none";
+            getCourses();
+          } else {
+            console.log(xhr.status, xhr.statusText);
+          }
+        };
+      }
+
+      function updateCancel() {
+        document.getElementById("editForm").style.display = "none";
+      }
+    </script>
+  </head>
+  <body>
+    <h1>Course Management</h1>
+    <button id="btnCrs">GET Class Data</button>
+    <br /><br />
+    <input type="text" id="cname" placeholder="Course Name" />
+    <input type="text" id="prof" placeholder="Professor" />
+    <input type="text" id="credits" placeholder="Credits" />
+    <input type="text" id="ccode" placeholder="Course Code" />
+    <button id="btnAdd">Add Class Data</button>
+    <br />
+    <p id="contents"></p>
+
+    <div id="editForm">
+      <h2>Edit Course</h2>
+      <input type="hidden" id="editId" />
+      <input type="text" id="editCname" placeholder="Course Name" />
+      <input type="text" id="editProf" placeholder="Professor" />
+      <input type="text" id="editCredits" placeholder="Credits" />
+      <input type="text" id="editCcode" placeholder="Course Code" />
+      <button id="btnUpdate">Update Course</button>
+      <button id="btnCancel">Cancel</button>
+    </div>
+  </body>
+</html>
